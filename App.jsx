@@ -1,10 +1,21 @@
 import React from "./core/React.js";
-const App = (
+
+function Counter({ num }) {
+  return <div>counter:{num}</div>;
+}
+
+function App() {
+  return (
     <div>
       111
-      <div>aaa <p>2</p></div>
-      <p>bbb</p>
-      <p>ccc</p>
+      <div>
+        aaa <p id="p2">2</p>
+      </div>
+      <p id="p">bbb</p>
+      <Counter num={12}></Counter>
+      <Counter num={14}></Counter>
     </div>
-);
+  );
+}
+
 export default App;
