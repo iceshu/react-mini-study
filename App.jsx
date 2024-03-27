@@ -1,15 +1,17 @@
 import React from "./core/React.js";
-
-function Counter({ num }) {
+let num = 0;
+function Counter() {
   return (
     <div>
-      counter:{num}{" "}
+      counter:{num}
       <button
         onClick={() => {
-          console.log(111);
+          console.log("fff");
+          num++;
+          React.update();
         }}
       >
-        1111
+        测试
       </button>
     </div>
   );
@@ -23,8 +25,7 @@ function App() {
         aaa <p id="p2">2</p>
       </div>
       <p id="p">bbb</p>
-      <Counter num={12}></Counter>
-      <Counter num={14}></Counter>
+      <Counter></Counter>
     </div>
   );
 }

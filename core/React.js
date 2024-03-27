@@ -20,13 +20,14 @@ function createElement(type, props, ...children) {
   };
 }
 let nextWorkOfUnit = null;
-let root = null;
+let wipRoot = null;
+let currentNode = null;
 function render(el, container) {
-  nextWorkOfUnit = {
+  wipRoot = {
     dom: container,
     props: { children: [el] },
   };
-  root = nextWorkOfUnit;
+  nextWorkOfUnit = wipRoot;
 }
 function commitWork(fiber) {
   if (!fiber) return;
@@ -34,15 +35,21 @@ function commitWork(fiber) {
   while (!fiberParent.dom) {
     fiberParent = fiberParent.parent;
   }
-  if (fiber.dom) {
-    fiberParent.dom.append(fiber.dom);
+  if (fiber.effectTag === "update") {
+    updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
+  } else if (fiber.effectTag === "placement") {
+    if (fiber.dom) {
+      fiberParent.dom.append(fiber.dom);
+    }
   }
+
   commitWork(fiber.child);
   commitWork(fiber.sibling);
 }
 function commitRoot() {
-  commitWork(root.child);
-  root = null;
+  commitWork(wipRoot.child);
+  currentNode = wipRoot;
+  wipRoot = null;
 }
 function workLoop(deadline) {
   let shouldYield = false;
@@ -50,7 +57,7 @@ function workLoop(deadline) {
     nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
     shouldYield = !deadline.timeRemaining() < 1;
   }
-  if (!nextWorkOfUnit && root != null) {
+  if (!nextWorkOfUnit && wipRoot != null) {
     commitRoot();
   }
   requestIdleCallback(workLoop);
@@ -62,30 +69,65 @@ function createDom(type) {
   }
   return document.createElement(type);
 }
-function updateProps(dom, props) {
-  Object.keys(props).forEach((key) => {
-    if (key.startsWith("on")) {
-      const eventType = key.toLowerCase().substring(2);
-      dom.addEventListener(eventType, props[key]);
-    } else {
+function updateProps(dom, nextProps, prevProps) {
+  //删除
+  if (prevProps) {
+    Object.keys(prevProps).forEach((key) => {
       if (key !== "children") {
-        dom[key] = props[key];
+        if (!(key in nextProps)) {
+          dom.removeAttribute(key);
+        }
+      }
+    });
+  }
+
+  Object.keys(nextProps).forEach((key) => {
+    if (key !== "children") {
+      if (key.startsWith("on")) {
+        const eventType = key.toLowerCase().substring(2);
+        dom.removeEventListener(eventType, prevProps[key]);
+        dom.addEventListener(eventType, nextProps[key]);
+      } else {
+        if (key !== "children") {
+          dom[key] = nextProps[key];
+        }
       }
     }
   });
 }
 
-function transformToChain(fiber, children) {
+function reconcileChildren(fiber, children) {
+  let oldFiber = fiber.alternate?.child;
   let prevChild = null;
   children.forEach((child, index) => {
-    const newFiber = {
-      type: child.type,
-      props: child.props,
-      child: null,
-      parent: fiber,
-      sibling: null,
-      dom: null,
-    };
+    const isSameType = oldFiber?.type === child.type;
+    let newFiber;
+    if (isSameType) {
+      //update
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: oldFiber.dom,
+        effectTag: "update",
+        alternate: oldFiber,
+      };
+    } else {
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: null,
+        effectTag: "placement",
+      };
+    }
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
     if (index === 0) {
       fiber.child = newFiber;
     } else {
@@ -97,15 +139,15 @@ function transformToChain(fiber, children) {
 
 function updateFunctionComponent(fiber) {
   const children = [fiber.type(fiber.props)];
-  transformToChain(fiber, children);
+  reconcileChildren(fiber, children);
 }
 function updateHostComponent(fiber) {
   if (!fiber.dom) {
     const dom = (fiber.dom = createDom(fiber.type));
-    updateProps(dom, fiber.props);
+    updateProps(dom, fiber.props, {});
   }
   const children = fiber.props.children;
-  transformToChain(fiber, children);
+  reconcileChildren(fiber, children);
 }
 
 function performWorkOfUnit(fiber) {
@@ -126,5 +168,14 @@ function performWorkOfUnit(fiber) {
   }
 }
 requestIdleCallback(workLoop);
-const React = { createElement, render };
+
+function update() {
+  wipRoot = {
+    dom: currentNode.dom,
+    props: currentNode.props,
+    alternate: currentNode,
+  };
+  nextWorkOfUnit = wipRoot;
+}
+const React = { createElement, render, update };
 export default React;
