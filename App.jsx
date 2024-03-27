@@ -1,7 +1,18 @@
 import React from "./core/React.js";
 
 function Counter({ num }) {
-  return <div>counter:{num}</div>;
+  return (
+    <div>
+      counter:{num}{" "}
+      <button
+        onClick={() => {
+          console.log(111);
+        }}
+      >
+        1111
+      </button>
+    </div>
+  );
 }
 
 function App() {
