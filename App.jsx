@@ -1,18 +1,34 @@
 import React from "./core/React.js";
-let num = 0;
-function Counter() {
+let show = false;
+let countFoo = 1;
+function Foo() {
+  console.log("Foo");
+  const update = React.update();
+  const handleClick = () => {
+    countFoo++;
+    update();
+  };
   return (
     <div>
-      counter:{num}
-      <button
-        onClick={() => {
-          console.log("fff");
-          num++;
-          React.update();
-        }}
-      >
-        测试
-      </button>
+      <h1>foo</h1>
+      {countFoo}
+      <button onClick={handleClick}>点击</button>
+    </div>
+  );
+}
+let countBar = 1;
+function Bar() {
+  console.log("bar");
+  const update = React.update();
+  const handleClick = () => {
+    countBar++;
+    update();
+  };
+  return (
+    <div>
+      <h1>bar</h1>
+      {countBar}
+      <button onClick={handleClick}>点击</button>
     </div>
   );
 }
@@ -21,11 +37,8 @@ function App() {
   return (
     <div>
       111
-      <div>
-        aaa <p id="p2">2</p>
-      </div>
-      <p id="p">bbb</p>
-      <Counter></Counter>
+      <Foo></Foo>
+      <Bar></Bar>
     </div>
   );
 }
