@@ -21,6 +21,8 @@ function createElement(type, props, ...children) {
 }
 let nextWorkOfUnit = null;
 let wipRoot = null;
+let currentFiber = null;
+let currentRoot = null;
 let deletes = [];
 let wipFiber = null;
 function render(el, container) {
